@@ -1,0 +1,12 @@
+EXE_INC = \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I../../src/lnInclude \
+    -I../../../multiSolver/src/multiSolver/lnInclude \
+    -I../../../equationReader/src/equationReader/lnInclude
+
+
+EXE_LIBS = \
+    -lfiniteVolume \
+    -L$(FOAM_USER_LIBBIN) \
+    -lmultiSolver \
+    -lplcEmulator

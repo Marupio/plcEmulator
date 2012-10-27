@@ -1,0 +1,52 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.5                                   |
+|   \\  /    A nd           | Web:      http://www.OpenFOAM.org               |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      multiControlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+multiSolverControl
+{
+    initialStartFrom    startTimeInStartDomain;
+    startTime           0;
+    startDomain         T0Up;
+    finalStopAt         endTime;
+    endTime             1000;
+    timeFormat          general;
+    timePrecision       6;
+}
+
+solverDomains
+{
+    algorithm0
+    {
+        stopAt          endTime;
+        endTime         1000;
+        deltaT          1;
+        storeFields     ( T1 );
+        writeControl    timeStep;
+        writeInterval   1;
+        purgeWrite      0;
+        writeFormat     ascii;
+        writePrecision  6;
+        writeCompression uncompressed;
+        runTimeModifiable yes;
+    }
+    T0Up { sameAs   algorithm0; }
+    T0Down { sameAs   algorithm0; }
+    stasis
+    {
+        sameAs   algorithm0;
+        storeFields     ( T0 T1 );
+    }
+}
+

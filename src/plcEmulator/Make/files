@@ -1,0 +1,15 @@
+plcTrigger = plcEmulator/plcTrigger
+$(plcTrigger)/plcTrigger/plcTrigger.C
+
+plcTriggers = $(plcTrigger)/plcTriggers
+$(plcTriggers)/conditionalSwitchPlcTrigger/conditionalSwitchPlcTrigger.C
+$(plcTriggers)/equationLimitPlcTrigger/equationLimitPlcTrigger.C
+$(plcTriggers)/solverDomainGroupPlcTrigger/solverDomainGroupPlcTrigger.C
+$(plcTriggers)/solverSignalPlcTrigger/solverSignalPlcTrigger.C
+$(plcTriggers)/timerPlcTrigger/timerPlcTrigger.C
+$(plcTriggers)/volScalarFieldLimitPlcTrigger/volScalarFieldLimitPlcTrigger.C
+
+plcEmulator/plcLogic/plcLogic.C
+plcEmulator/plcEmulator/plcEmulator.C
+
+LIB = $(FOAM_USER_LIBBIN)/libplcEmulator
