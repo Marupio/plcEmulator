@@ -26,7 +26,7 @@ Application
     plcTester
 
 Description
-    A bunch of bogus algorithms designed for the testing of the plcController.
+    A bunch of bogus algorithms designed for the testing of the plcEmulator.
 
 Author
     David L. F. Gaden
@@ -35,7 +35,7 @@ Author
 
 #include "fvCFD.H"
 #include "multiSolver.H"
-#include "plcController.H"
+#include "plcEmulator.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     bool bugWorkAround(true);
 
     // Create controller, reads current solverDomain and triggers
-    plcController control(multiRun);
+    plcEmulator control(multiRun);
 
     // Main loop (superLoop)
     while (multiRun.run())
