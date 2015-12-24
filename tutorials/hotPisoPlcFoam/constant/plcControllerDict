@@ -1,0 +1,256 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.5                                   |
+|   \\  /    A nd           | Web:      http://www.OpenFOAM.org               |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      admCoefficientDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+algorithmGroups
+{
+    hotPisoPlcFoam
+    (
+        // list all domains in here
+    );
+}
+
+// Outputs
+// * Tout - outlet temperature
+//
+// Inputs
+// * AC - air conditioning on / off
+// * Heater - on / off
+
+triggers
+{
+
+    T0TooHigh
+    {
+        type            volScalarFieldLimit;
+        variableName    T0;
+        objectRegistry  ( "region0" );
+        evaluation      internalFieldAverage;
+        greaterThan     100;
+    }
+    T0TooLow
+    {
+        type            volScalarFieldLimit;
+        variableName    T0;
+        objectRegistry  ( "region0" );
+        evaluation      internalFieldAverage;
+        lessThan        50;
+    }
+    sequentialTimer
+    {
+        type                timer;
+        valueWhenActive     false;
+        duration            22.5;
+        roundOff            1e-6;
+        startAt             runStart;
+        nRepeat             -1;
+    }
+    stasisTimer
+    {
+        type                timer;
+        duration            11.7;
+        roundOff            1e-6;
+        startAt             trigger;
+        trigger             sequentialTimer;
+        nRepeat             -1;
+    }
+    direction
+    {
+        type    conditionalSwitch;
+        trueWhen
+        {
+            triggered       ( T0Increasing );
+            notTriggered    ();
+        }
+        falseWhen
+        {
+            triggered       ( T0Decreasing );
+            notTriggered    ();
+        }
+    }
+    T0Increasing
+    {
+        type            solverDomainGroup;
+        solverDomains   ( T0Up );
+    }
+    T0Decreasing
+    {
+        type            solverDomainGroup;
+        solverDomains   ( T0Down );
+    }
+}
+
+logic
+{
+    waitInStasis
+    {
+        solverDomain    stasis;
+        triggered       ( stasisTimer );
+        notTriggered    (  );
+    }
+    T0GoDown
+    {
+        solverDomain    T0Down;
+        triggered       ( T0Increasing T0TooHigh );
+        notTriggered    (  );
+    }
+
+    T0GoUp
+    {
+        solverDomain    T0Up;
+        triggered       ( T0Decreasing T0TooLow );
+        notTriggered    (  );
+    }
+    wakeT0GoDown
+    {
+        solverDomain    T0Down;
+        triggered       ();
+        notTriggered    ( direction stasisTimer );
+    }
+    wakeT0GoUp
+    {
+        solverDomain    T0Up;
+        triggered       ( direction );
+        notTriggered    ( stasisTimer );
+    }
+}
+
+// * Triggers are tested at every time step in both steady state and transient
+//   solvers.
+// * A changing trigger causes the logic tests to be run.
+// * If the resulting solverDomain is the current one, the run continues.
+// * equationLimit triggers are evaluated only at the end of the timestep.
+// * Timer triggers shorten the timestep if it will overstep the end mark.
+// * Timers are true when running.
+// * Repeating timers send a pulse of false at the duration mark.
+// * Repeating timers returning to true is ignored.
+// * I may need to implement flexibility into timers to make close nearby
+//   timers coincide.
+//
+// How the control will work:
+// 1  The constant admControllerDict is read
+// 2  multiSolver loads the domain
+// 3  The latest admTriggers state is loaded
+// 4  Test if the timestep needs to change to meet the next timer
+// 5  Solver takes a step
+// 6  If the triggers change:
+//    6-1  Run controller logic to find next solver domain 
+//    6-2  If the domain changes:
+//         6-2-1  update admTriggers dictionary
+//         6-2-2  multiSolver switches domains
+//         6-2-3  Save admTriggers to superLoop folder of new domain
+// 7  Go to 4
+
+// Logic, implemented above
+// turn heat on
+//tooCold && !mixerRunTimer && !flowRunTimer && !heaterOn --> tM0F0H1
+//tooCold && !mixerRunTimer && flowRunTimer && !heaterOn  --> tM0F1H1
+//tooCold && mixerRunTimer && !flowRunTimer && !heaterOn  --> tM1F0H1
+//tooCold && mixerRunTimer && flowRunTimer && !heaterOn   --> tM1F1H1
+//
+// turn heat off
+//tooHot && !mixerRunTimer && !flowRunTimer && heaterOn --> tM0F0H0
+//tooHot && !mixerRunTimer && flowRunTimer && heaterOn  --> tM0F1H0
+//tooHot && mixerRunTimer && !flowRunTimer && heaterOn  --> tM1F0H0
+//tooHot && mixerRunTimer && flowRunTimer && heaterOn   --> tM1F1H0
+//
+// all others
+//!mixerRunTimer && !flowRunTimer && !heaterOn --> tM0F0H0
+//!mixerRunTimer && !flowRunTimer && heaterOn -->  tM0F0H1
+//!mixerRunTimer && flowRunTimer && !heaterOn -->  tM0F1H0
+//!mixerRunTimer && flowRunTimer && heaterOn -->   tM0F1H1
+//mixerRunTimer && !flowRunTimer && !heaterOn -->  tM1F0H0
+//mixerRunTimer && !flowRunTimer && heaterOn -->   tM1F0H1
+//mixerRunTimer && flowRunTimer && !heaterOn -->   tM1F1H0
+//mixerRunTimer && flowRunTimer && heaterOn -->    tM1F1H1
+
+/* general dictionary format
+algorithmGroups
+{
+    algorithmName (solverDomainName solverDomainName ...);
+    ...
+}
+
+triggers
+{
+    triggerName
+    {
+        initialCondition    on/off; // default off
+        type    solverDomainGroup;
+            solverDomains   (solverDomainName solverDomainName ...);
+        type    solverSignal;
+        type    equationLimit;
+            equationName    equationName;
+            equationReaderName  equationReaderName; // default eqns
+            evaluation      point;
+                geoIndex        label; // default 0
+                cellIndex       label;
+            evaluation      patchFieldAverage;
+                patchIndex      label;
+                meshName        word; // default region0
+            evaluation      patchFieldMaximum;
+                patchIndex      label;
+                meshName        word; // default region0
+            evaluation      patchFieldMinimum;
+                patchIndex      label;
+                meshName        word; // default region0
+            evaluation      internalFieldAverage;
+                meshName        word; // default region0
+            evaluation      internalFieldMaximum;
+                meshName        word; // default region0
+            evaluation      internalFieldMinimum;
+                meshName        word; // default region0
+            greaterThan     scalar; // optional if lessThan is defined
+            lessThan        scalar; // optional if greaterThan is defined
+        type    volScalarFieldLimit;
+            variableName    variableName;
+            evaluation      point;
+                geoIndex        label; // default 0
+                cellIndex       label;
+            evaluation      patchFieldAverage;
+                patchIndex      label;
+            evaluation      patchFieldMaximum;
+                patchIndex      label;
+            evaluation      patchFieldMinimum;
+                patchIndex      label;
+            evaluation      internalFieldAverage;
+            evaluation      internalFieldMaximum;
+            evaluation      internalFieldMinimum;
+            greaterThan     scalar; // optional if lessThan is defined
+            lessThan        scalar; // optional if greaterThan is defined
+        type    timer;
+            duration            scalar;
+            valueWhenActive     true/false; // default true
+            startAt             runStart;
+            startAt             trigger;
+                trigger             triggerName;
+            nRepeat             scalar; // N = number of repitions,
+                                        // 0 = run once, -1 = always repeat
+                                        // default -1
+    }
+}
+
+logic
+{
+    order   (testName testName testName ...); // optional
+    testName
+    {
+        solverDomain    solverDomainName;
+        triggered       (triggerName triggerName ...); // optional
+        notTriggered    (triggerName triggerName ...); // optional
+    }
+    ...
+}
+*/

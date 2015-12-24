@@ -1,7 +1,7 @@
 EXE_INC = \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
-    -I../../../multiSolver/src/multiSolver/lnInclude \
-    -I../../../equationReader/src/equationReader/lnInclude \
+    -I$(LIB_SRC)/equationReader/lnInclude \
+    -I$(LIB_SRC)/multiSolver/lnInclude
 
 LIB_LIBS = \
     -lfiniteVolume \

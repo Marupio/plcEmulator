@@ -1,0 +1,22 @@
+EXE_INC = \
+    -I$(LIB_SRC)/turbulenceModels/incompressible/turbulenceModel \
+    -I$(LIB_SRC)/transportModels \
+    -I$(LIB_SRC)/transportModels/incompressible/singlePhaseTransportModel \
+    -I$(LIB_SRC)/finiteVolume/lnInclude \
+    -I$(LIB_SRC)/equationReader/lnInclude \
+    -I$(LIB_SRC)/multiSolver/lnInclude \
+    -I../../src/plcEmulator/lnInclude
+    
+EXE_LIBS = \
+    -lincompressibleTurbulenceModel \
+    -lincompressibleRASModels \
+    -lincompressibleLESModels \
+    -lincompressibleTransportModels \
+    -lfiniteVolume \
+    -lmeshTools \
+    -llduSolvers \
+    -L$(FOAM_USER_LIBBIN) \
+    -lequationReader \
+    -lmultiSolver \
+    -lplcEmulator
+

@@ -1,0 +1,62 @@
+#  
+=============================================================================
+# Logic Code for OpenFOAM
+#  
+=============================================================================
+# Function: Determine the appropriate boundary conditions required for the
+#           OpenFOAM simulation. Note - Written using persudo python code
+#  
+=============================================================================
+# Variables:
+# T -------------------------- Measured Outlet Temperature
+# T_min ---------------------- Minimum Desired Outlet Temperature
+# T_max ---------------------- Maximum Desired Outlet Temperature
+# T_cold, U_cold, P_cold ----- Cold Inlet Temperature, Velocity and Pressure
+# T_hot, U_hot, P_hot -------- Hot Inlet Temperature, Velocity and Pressure
+# AC ------------------------- Air Conditioning (Cylinder) Temperature
+#  
+=============================================================================
+# Note - Case 3 is optional. I wasn't sure if it is needed or not. The code
+#        should work with or without this code. I am struggling with  
+this as in
+#        theory when we reach the desired temperature from cooling we should
+#        turn off the AC. Let me know your thoughts.
+#  
+=============================================================================
+
+# Case 1: Too Hot
+if T > T_max :
+    T_cold = 30sin(wt)
+    U_cold = 1
+    P_cold = 0
+
+    T_hot = isothermal
+    U_hot = 0
+    P_hot = isothermal
+
+    AC = 10
+
+# Case 2: Too Cold
+elif T < T_min :
+    T_cold = isothermal
+    U_cold = 0
+    P_cold = isothermal
+
+    T_hot = 25
+    U_hot = 1
+    P_hot = 0
+
+    AC = isothermal
+
+# Case 3:
+else:                    # Or if ( T < T_max and T > T_min)
+    T_cold = 30sin(wt)
+    U_cold = 1
+    P_cold = 0
+
+    T_hot = isothermal
+    U_hot = 0
+    P_hot = isothermal
+
+    AC = isothermal
+
